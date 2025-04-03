@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>London Cultural Infrastructure Map</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.16.0/d3.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Manrope:wght@200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Rubik+Mono+One&family=Tilt+Warp&family=Urbanist:wght@100..900&display=swap" rel="stylesheet">   
+
+    <style>
+        body { margin: 0; padding: 0; display: flex; font-family: "Bricolage Grotesque", sans-serif; font-weight:450; text-transform: uppercase ;font-size: 15px; position: relative; display: flex; }
+        
+    #sidebar {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 250px;
+    height: 100vh;
+    padding: 15px;
+    background: #fff;
+    box-shadow: -2px 0px 5px rgba(0,0,0,0.2);
+    overflow-y: auto;
+    display: flex;
+    flex-direction:column;
+}
+
+
+    #sidebar h3 {
+  font-weight: 700; 
+  text-transform: uppercase;
+}   
+
+
+    #boroughFilters, #filters {
+    max-height: 40vh; 
+    overflow-y: auto;
+    flex-grow: 1; 
+    padding-right: 10px; 
+}
+
+    #filters {
+    margin-bottom: 10px; 
+}
+
+
+#boroughFilters::-webkit-scrollbar,
+#filters::-webkit-scrollbar {
+    width: 7px;
+}
+
+#boroughFilters::-webkit-scrollbar-track,
+#filters::-webkit-scrollbar-track {
+    background: rgba(109, 109, 109, 0.1);
+}
+
+#boroughFilters::-webkit-scrollbar-thumb,
+#filters::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    height: 5px;
+}
+
+
+    #map { flex-grow: 1; height: 100vh; margin-right: 280px;}
+        .category { margin-bottom: 5px; }
+        .mapboxgl-popup-content {
+    font-family: "Urbanist", sans-serif;
+    font-size: 14px;
+}
+    #mapTitle {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 20px 20px;
+    font-size: 25px;
+    font-weight: light;
+    border-radius: 5px;
+    z-index: 1100;
+}
+
+#mapTitle span {
+  display: block;
+}
+#mapTitle .large {
+  font-size: 36px;
+  font-family: "Rubik Mono One", monospace;
+  font-weight: 100;
+}
+
+#mapTitle .red {
+  font-size: 36px;
+  font-weight: 700;
+  font-family: "Urbanist";
+  color:rgb(255, 55, 0);
+}
+
+.subtitle {
+    font-family: "Rubik Mono One", monospace;
+    font-size: 12px;
+    font-weight: 300;
+    color: rgb(73, 73, 73); 
+    display: block;
+    text-align: left;
+    margin-top: 5px;
+}
+
+#open-info {
+    position: absolute;
+    top: 10px; 
+    left:390px; 
+    background: #010101;
+    color: rgb(252, 251, 251);
+    padding: 8px 16px;
+    border-radius: 50px;
+    cursor: pointer;
+    border: none;
+    z-index: 1500;
+    font-family:"Urbanist", sans-serif;
+    font-size:small;
+}
+
+#info-bar {
+    position: absolute;
+    top: 50px;
+    left: 600px;
+    transform: translateX(-50%);
+    background: white;
+    padding: 10px;
+    border-radius: 0px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: none; 
+    width: 400px
+}
+
+#close-info {
+    color: rgb(6, 5, 5);
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+}
+
+#info-content {
+    font-weight: 450;
+    text-transform: none;
+}
+
+a {
+    color: #BF0B0B;
+}
+
+.diverse {
+    font-weight:650;
+}
+
+    </style>
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <h3>Filter Categories</h3>
+        <div id="filters"></div>
+
+        <h3>Filter Boroughs</h3>
+        <div id="boroughFilters"></div>
+    </div>
+
+
+    <div id="mapTitle">
+        <span class="large">LONDON</span>
+        <span class="red">CULTURAL</span>
+        <span class="red">INFRASTRUCTURE</span>
+        <span class ="large">MAP</span>
+        <br>
+    <span class="subtitle">where culture brings us together</span>
+        
+    </div>
+
+    <button id="open-info">MORE INFO</button>
+
+    <div id="info-bar">
+        <div id="info-content">
+            <p>This map visualises cultural infrastructure datasets from the London Datastore. 
+                For more details, including definitions of each category, please visit the
+                <a href="https://data.london.gov.uk/dataset/cultural-infrastructure-map" class="link">London Datastore</a>.</p>
+                    <p class = diverse>Discover and explore the diverse cultural scene of the city!</p>
+            <button id="close-info"aria-label="Close">×</button>
+        </div>
+    </div>
+
+    
+
+
+    <div id="map"></div>
+
+
+<script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiaHdvamNpYWsiLCJhIjoiY202bWkzcnlhMGVxODJzc204dm5nNWpiYiJ9.qUyWV7vHdYRPuZG3Pq-ZlA';
+
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v10',
+        center: [-0.1, 51.5],
+        zoom: 11
+    });
+
+    map.addControl(new mapboxgl.NavigationControl());
+
+    document.addEventListener("DOMContentLoaded", function () {
+    const openBtn = document.getElementById("open-info");
+    const closeBtn = document.getElementById("close-info");
+    const infoBar = document.getElementById("info-bar");
+
+    openBtn.addEventListener("click", function () {
+        console.log("Open button clicked");
+        infoBar.style.display = "block";
+    });
+
+    closeBtn.addEventListener("click", function () {
+        console.log("Close button clicked");
+        infoBar.style.display = "none";
+    });
+});
+
+
+
+    // Defining CSV sources for each category
+    var csvSources = {
+        "Artists Workspaces":"https://data.london.gov.uk/download/cultural-infrastructure-map/f4254814-935e-4ffd-b9f6-f841dfd1cd82/2019%20publication%20-%20Artists_workspaces%20%282023%20revision%29.csv",
+        "Creative Co-Working Desk Space":"https://data.london.gov.uk/download/cultural-infrastructure-map/40bf1a44-98ac-40d1-b558-9698f99bd050/2019%20publication%20-%20Creative_coworking_desk_space%20%282023%20revision%29.csv",
+        "Creative Workspace":"https://data.london.gov.uk/download/cultural-infrastructure-map/d74cdb33-1528-41c5-9849-06afd60c2678/2019%20publication%20-%20Creative_workspaces%20%282023%20revision%29.csv",
+        "Dance Performance Venues":"https://data.london.gov.uk/download/cultural-infrastructure-map/730a2942-39ad-4a34-87fe-efbbb5cc7c71/2019%20publication%20-%20Dance_performance_venues%20%282023%20revision%29.csv",
+        "Live in Artists' Workspace":"https://data.london.gov.uk/download/cultural-infrastructure-map/3bce412e-b1c8-4554-a120-a5920008ab17/Live_in_artists_workspace.csv",
+        "Outdoor Spaces for Cultural Use":"https://data.london.gov.uk/download/cultural-infrastructure-map/6e16c2db-bd27-4e1e-9ab7-ea6369966393/Outdoor_spaces_for_cultural_use.csv",
+        "Pubs":"https://data.london.gov.uk/download/cultural-infrastructure-map/7e6b0f36-da01-4029-99d7-640d89c4a0a4/Pubs.csv",
+        "Dance Rehearsal Studios":"https://data.london.gov.uk/download/cultural-infrastructure-map/5e278953-8445-46df-ae48-1fa7e9f16157/2019%20publication%20-%20Dance_rehearsal_studios%20%282023%20revision%29.csv",
+        "Fashion and Design Manufacturing":"https://data.london.gov.uk/download/cultural-infrastructure-map/4eb7a9c2-c4e4-4032-a54a-9e38ef3fe6e8/2019%20publication%20-%20Fashion_and_design%20%282023%20revision%29.csv",
+        "Jewellery Design and Manufacturing":"https://data.london.gov.uk/download/cultural-infrastructure-map/4d9469ea-6bee-4836-9a95-9082a4728f12/2019%20publication%20-%20Jewellery_design%20%282023%20revision%29.csv",
+        "Music (Office Based Businesses)":"https://data.london.gov.uk/download/cultural-infrastructure-map/fa9e6157-807f-48d3-8ac4-6a4030490131/2019%20publication%20-%20Music_office_based_businesses.csv",
+        "Legal Street Art Walls":"https://data.london.gov.uk/download/cultural-infrastructure-map/21cd5ed4-e846-44ea-b6c1-1afdf244e292/Legal_street_art_walls.csv",
+        "Large Scale Screen Based Media Production Studios":"https://data.london.gov.uk/download/cultural-infrastructure-map/d149fb3f-c6b2-4d8b-8cfb-89efe74f0c5f/Large_media_production_studios.csv",
+        "Libraries":"https://data.london.gov.uk/download/cultural-infrastructure-map/2dd6ce1e-61a9-499d-8e3e-c6fb26726e7b/2019%20publication%20-%20Libraries%20%282023%20revision%29.csv",
+        "Makerspaces":"https://data.london.gov.uk/download/cultural-infrastructure-map/a19ebe8a-c026-4f4e-ac56-53d3f48b72fb/2019%20publication%20-%20Makerspaces%20%282023%20revision%29.csv",
+        "Making and Manufacturing for The Creative Industries":"https://data.london.gov.uk/download/cultural-infrastructure-map/9261b9e3-29dc-4c88-890b-12d3d5a226f6/2019%20publication%20-%20Making_and_manufacturing%20%282023%20revision%29.csv",
+        "Commercial Galleries":"https://data.london.gov.uk/download/cultural-infrastructure-map/27c653ae-080e-469d-b0d9-4a663b52d726/2019%20publication%20-%20Commercial_galleries%20%282023%20revision%29.csv",
+        "Music Venues":"https://data.london.gov.uk/download/cultural-infrastructure-map/ceb42f72-aee0-4bdc-8eb8-973c66ec9f81/Music_venues_all.csv",
+        "Arts Centres": "https://data.london.gov.uk/download/cultural-infrastructure-map/bec79216-7a51-4810-89d5-da8cc44d8458/Arts_centres.csv",
+        "Cinemas": "https://data.london.gov.uk/download/cultural-infrastructure-map/f353f97b-a1fb-41fa-810a-825586839b4d/2019%20publication%20-%20Cinemas%20%282023%20revision%29.csv",
+        "Museums and Public Galleries": "https://data.london.gov.uk/download/cultural-infrastructure-map/d091e270-182a-444d-b4ee-64d9d9682749/2019%20publication%20-%20Museums_and_public_galleries%20%282023%20revision%29.csv",
+        "Theatres":"https://data.london.gov.uk/download/cultural-infrastructure-map/c9bda99b-2156-4ecd-b09d-c207ae5947e2/2019%20publication%20-%20Theatres%20%282023%20revision%29.csv",
+        "Theatre Rehearsal Studios":"https://data.london.gov.uk/download/cultural-infrastructure-map/db3e3507-4ae1-4795-b838-2e0293bc722c/2019%20publication%20-%20Theatre_rehearsal_studio%20%282023%20revision%29.csv",
+        "Textile Design and Finishing Services":"https://data.london.gov.uk/download/cultural-infrastructure-map/2ff48612-b14d-4289-abf6-6294d40e5fb5/2019%20publication%20-%20Textile_design%20%282023%20revision%29.csv",
+        "Skate Parks":"https://data.london.gov.uk/download/cultural-infrastructure-map/acf74a29-212f-4cd4-b01e-464bf83fcd99/Skate_Parks.csv",
+        "Set and Exhibition Design and Building":"https://data.london.gov.uk/download/cultural-infrastructure-map/4d364e07-e01b-4f2b-8916-3b7e2be7cadb/2019%20publication%20-%20Set_and_exhibition_building%20%282023%20revision%29.csv",
+        "Prop and Costume Making and Hiring":"https://data.london.gov.uk/download/cultural-infrastructure-map/5d3de727-af1d-4e67-8d3d-7e245cbaa9ac/2019%20publication%20-%20Prop_and_costume_making%20%282023%20revision%29.csv",
+        "Music (Recording)":"https://data.london.gov.uk/download/cultural-infrastructure-map/277ad0a9-5cfd-45c7-9962-0e464337530a/2019%20publication%20-%20Music_recording_studios%20%282023%20revision%29.csv",
+        "Music Rehearsal Studios":"https://data.london.gov.uk/download/cultural-infrastructure-map/e3ee048e-b661-4eeb-89ed-f96b485378db/2019%20publication%20-%20Music_rehearsal_studios%20%282023%20revision%29.csv",
+        "Community Centres": "https://data.london.gov.uk/download/cultural-infrastructure-map/a8625bba-addb-4fae-a737-244b2281f429/2019%20publication%20-%20Community_centres%20%28Nov%202023%29.csv",
+
+
+    };  
+
+    const validBoroughs = [
+    "Barking and Dagenham", "Barnet", "Bexley", "Brent", "Bromley",
+    "Camden", "Croydon", "Ealing", "Enfield", "Greenwich",
+    "Hackney", "Hammersmith and Fulham", "Haringey", "Harrow", "Havering",
+    "Hillingdon", "Hounslow", "Islington", "Kensington and Chelsea", "Kingston upon Thames",
+    "Lambeth", "Lewisham", "Merton", "Newham", "Redbridge",
+    "Richmond upon Thames", "Southwark", "Sutton", "Tower Hamlets", "Waltham Forest",
+    "Wandsworth", "Westminster", "City of London"
+];
+
+// Function to clean borough names
+function cleanBoroughName(borough) {
+    const normalizedBorough = borough.trim(); // Trim spaces
+    return validBoroughs.includes(normalizedBorough) ? normalizedBorough : "Unknown";
+}
+
+
+    // Colors for different categories
+    const categoryColors = {
+        "Museums and Public Galleries":"#BF0B0B",
+        "Community Centres":"#3565F2",
+        "Music Venues":"#a1ccc8",
+        "Arts Centres": "#6cb7f6",
+        "Cinemas":"#092C73", 
+        "Commercial Galleries":"#22cb96",
+        "Theatres":"#359f01",
+        "Theatre Rehearsal Studios": "#04bf68",
+        "Textile design and Finishing Services":"#997cea",
+        "Skate Parks": "#0bd503",
+        "Set and Exhibition Design and Building":"#6f75b6",
+        "Prop and Costume Making and Hiring":"#833535",
+        "Music (Recording)":"#7c9795",
+        "Music Rehearsal Studios":"#efb3fe",
+        "Music (Office Based Businesses)":"#037f46",
+        "Making and Manufacturing for The Creative Industries":"#23abff",
+        "Makerspaces":"#F2C9CE",
+        "Libraries":"#ff7a7a",
+        "Legal Street Art Walls":"#84e680",
+        "Large Scale Screen Based Media Production Studios":"#1b6d9f",
+        "Jewellery Design and Manufacturing":"#f20505",
+        "Fashion and Design Manufacturing":"#d94545",
+        "Dance Rehearsal Studios":"#404bc6",
+        "Dance Performance Venues":"#bd24e3",
+        "Pubs":"#cfe135",
+        "Outdoor Spaces for Cultural Use":"#b2f4b0",
+        "Live in Artists' Workspace":"#fbd051",
+        "Creative Workspace":"#ff6a00",
+        "Creative Co-Working Desk Space":"#467774",
+        "Artists Workspaces":"#000000",
+
+
+
+
+
+    };
+
+    let allGeoJSONFeatures = [];
+
+    // Function to load CSV and convert to GeoJSON
+    function loadCSVToGeoJSON(url, category) {
+        return new Promise((resolve, reject) => {
+            d3.csv(url).then(data => {
+                let features = data.map(d => ({
+                    type: "Feature",
+                    geometry: {
+                        type: "Point",
+                        coordinates: [+d.longitude, +d.latitude] 
+                    },
+                    properties: {
+                        name: d.name,
+                        address: d.address1,
+                        category: category,
+                        borough: cleanBoroughName(d.borough_name || d.borough || "Unknown")
+ //  Ensure borough is included
+                    }
+                }));
+                resolve(features);
+            }).catch(error => reject(error));
+        });
+    }
+
+    // Loading all CSV sources and add to the map
+    Promise.all(Object.entries(csvSources).map(([category, url]) => loadCSVToGeoJSON(url, category)))
+    .then(results => {
+        allGeoJSONFeatures = results.flat(); // Combining all features into one array
+
+        // Collecting all unique boroughs from the dataset
+        let allBoroughs = new Set();
+        allGeoJSONFeatures.forEach(feature => {
+            if (feature.properties.borough) {
+                allBoroughs.add(feature.properties.borough);
+            }
+        });
+
+        // Adding borough filter checkboxes to the sidebar
+const boroughFilters = document.getElementById('boroughFilters');
+
+
+
+// Create "Disable All" checkbox
+let disableAllCheckbox = document.createElement('input');
+disableAllCheckbox.type = 'checkbox';
+disableAllCheckbox.id = 'disableAll';
+
+disableAllCheckbox.onchange = function () {
+    let boroughCheckboxes = document.querySelectorAll(".borough");
+
+    if (this.checked) {
+        // Uncheck all borough checkboxes
+        boroughCheckboxes.forEach(cb => {
+            cb.checked = false;
+        });
+        enableAllCheckbox.checked = false; // Ensure "Enable All" is unchecked
+    }
+
+    // Runing updateFilters to apply the changes
+    updateFilters();
+};
+
+// Creating label for "Disable All"
+let disableAllLabel = document.createElement('label');
+disableAllLabel.innerText = "Disable All";
+disableAllLabel.prepend(disableAllCheckbox);
+boroughFilters.appendChild(disableAllLabel);
+boroughFilters.appendChild(document.createElement('br'));
+
+// Creating "Enable All" checkbox
+let enableAllCheckbox = document.createElement('input');
+enableAllCheckbox.type = 'checkbox';
+enableAllCheckbox.id = 'enableAll';
+
+enableAllCheckbox.onchange = function () {
+    let boroughCheckboxes = document.querySelectorAll(".borough");
+
+    if (this.checked) {
+        // Check all borough checkboxes
+        boroughCheckboxes.forEach(cb => {
+            cb.checked = true;
+        });
+        disableAllCheckbox.checked = false; // Ensure "Disable All" is unchecked
+    }
+
+    // Runing updateFilters to apply the changes
+    updateFilters();
+};
+
+// Creating label for "Enable All"
+let enableAllLabel = document.createElement('label');
+enableAllLabel.innerText = "Enable All";
+enableAllLabel.prepend(enableAllCheckbox);
+boroughFilters.appendChild(enableAllLabel);
+boroughFilters.appendChild(document.createElement('br'));
+
+
+// Creating borough checkboxes
+allBoroughs.forEach(borough => {
+    let checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = true;
+    checkbox.value = borough;
+    checkbox.className = 'borough';
+
+    checkbox.onchange = function() {
+        disableAllCheckbox.checked = false; // Uncheck "Disable All" when a borough is selected
+        document.querySelectorAll('.borough').forEach(cb => cb.disabled = false);
+        updateFilters();
+    };
+
+    let label = document.createElement('label');
+    label.innerText = borough;
+    label.prepend(checkbox);
+
+    boroughFilters.appendChild(label);
+    boroughFilters.appendChild(document.createElement('br'));
+});
+
+
+            let geojsonData = { type: "FeatureCollection", features: allGeoJSONFeatures };
+
+            map.addSource('cultural_data', {
+                type: 'geojson',
+                data: geojsonData
+            });
+
+            // Adding points layer
+            map.addLayer({
+                id: 'culturalPoints',
+                type: 'circle',
+                source: 'cultural_data',
+                paint: {
+                    'circle-color': [
+                        'match',
+                        ['get', 'category'],
+                        ...Object.entries(categoryColors).flat(),
+                        '#ccc'
+                    ],
+                    'circle-radius': 3.5,
+                    'circle-opacity': 0.7,
+                    'circle-stroke-color': '#000'
+                }
+            });
+
+            let activePopup = null; // Tracking the active popup
+
+            map.on('mouseenter', 'culturalPoints', (e) => {
+    map.getCanvas().style.cursor = 'pointer';
+
+    const coordinates = e.features[0].geometry.coordinates.slice();
+    const props = e.features[0].properties;
+
+    // Geting category and its corresponding color
+    const category = props.category;
+    const categoryColor = categoryColors[category] || "#000";
+
+    // Popup content with category in color
+    const description = `
+        <div style= "font-family: 'Bricolage Grotesque', sans-serif; text-transform: none;">
+            <h3 style="font-weight: normal; margin: 0;">${props.name}</h3>
+            <p style="margin: 5px 0;">${props.address}</p>
+            <p style="margin: 5px 0; color: ${categoryColor}; font-weight: bold;">${category}</p>
+        </div>`;
+
+    if (activePopup) {
+        activePopup.remove();
+    }
+
+    activePopup = new mapboxgl.Popup({ closeOnClick: false })
+        .setLngLat(coordinates)
+        .setHTML(description)
+        .addTo(map);
+});
+
+
+
+           // Defining default categories to be checked
+const defaultCategories = ["Music Venues", "Community Centres", "Museums and Public Galleries"]; // These are the 3 categories
+
+// Creating category filter checkboxes
+const filterContainer = document.getElementById('filters');
+
+// Createing category filter checkboxes with colored squares
+Object.keys(categoryColors).forEach(category => {
+    let checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = defaultCategories.includes(category); 
+    checkbox.value = category;
+    checkbox.className = 'category';
+    checkbox.onchange = updateFilters;
+
+    let label = document.createElement('label');
+    label.innerText = category;
+    
+    // Creating a colored square or circle next to the checkbox
+    let colorBox = document.createElement('span');
+    colorBox.style.display = 'inline-block';
+    colorBox.style.width = '15px';
+    colorBox.style.height = '15px';
+    colorBox.style.backgroundColor = categoryColors[category];
+    colorBox.style.marginRight = '10px'; 
+    colorBox.style.borderRadius = '50%';  
+
+    label.prepend(colorBox);  
+    label.appendChild(checkbox);
+
+    filterContainer.appendChild(label);
+    filterContainer.appendChild(document.createElement('br'));
+});
+
+updateFilters();
+
+            function updateFilters() {
+    if (!map.getLayer('culturalPoints')) return;
+    let activeCategories = Array.from(document.querySelectorAll('.category:checked'))
+        .map(cb => cb.value);
+    let activeBoroughs = Array.from(document.querySelectorAll('.borough:checked'))
+        .map(cb => cb.value);
+
+    // If no boroughs are selected, hide all points
+    if (activeBoroughs.length === 0) {
+        console.warn("No boroughs selected! Hiding all data points.");
+        map.setFilter('culturalPoints', ['in', 'borough', '']); // Empty filter to show 0 points
+        return;
+    }
+
+    // Apply normal filtering when boroughs are selected
+    map.setFilter('culturalPoints', [
+        'all',
+        ['match', ['get', 'category'], activeCategories, true, false],
+        ['match', ['get', 'borough'], activeBoroughs, true, false]
+    ]);
+}
+
+
+
+
+    })
+    .catch(error => console.error("Error loading data:", error));
+
+
+</script>
+
+</body>
+</html>
